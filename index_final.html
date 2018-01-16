@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="http://d3js.org/d3.v3.min.js"></script>
+  <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+  <style>
+      h2 {
+        text-align: center;
+      }
+
+      h6 {
+        text-align: center;
+      }
+    </style>
+
+    <script type="text/javascript">
+      "use strict";
+      function draw(data) {
+      
+      /*
+        D3.js setup code
+      */
+
+          
+          var margin = 75,
+              width = 1200 - margin,
+              height = 500 - margin;
+
+          d3.select("body")
+            .append("h2")
+              .text("Titanic Survivors by Sex and Passenger Class")
+            .append("h6")
+              .text("The visualization aims to show that women and higher class passengers were more likely to survive")
+            
+
+          var svg = d3.select("body")
+            .append("svg")
+              .attr("width", width + margin)
+              .attr("height", height + margin)
+            .append('g')
+              .attr('class','chart');
+
+      /*
+        Dimple.js Chart construction code
+      */
+
+          // Create the indicator chart
+          var indicator = new dimple.chart(svg, data);
+
+          
+          indicator.defaultColors = [
+          new dimple.color("#F8F8F8"),
+          new dimple.color("#5656EF")
+          ];
+
+        
+
+          // Default color will be light gray. Clicked button will be
+          // blue
+          var defaultColor = indicator.defaultColors[0];
+          var indicatorColor = indicator.defaultColors[1];
+          
+
+          // Set the frame duration for the animation in milliseconds
+          var frame = 3200;
+          var firstTick = true;
+      
+          // Place the indicator bar chart to the right
+          indicator.setBounds(1000, 50, 100, 100);
+          
+          // Add Sex along the y axis
+          var y = indicator.addCategoryAxis("y", "Class");
+          y.addOrderRule(["Upper","Middle","Lower",false]);
+          
+          /// Use Passenger Count for bar size and hide the axis
+          var x = indicator.addMeasureAxis("x", "Passenger Count");
+          x.hidden = true;
+
+          // Add the bars to the indicator and add event handlers
+          var s = indicator.addSeries(null, dimple.plot.bar);
+          s.addEventHandler("click", onClick);
+
+          // Draw the side chart
+          indicator.draw();
+
+          //Remove the axis labels and the axis in order to make the plot resemble buttons
+          y.titleShape.remove();    
+
+          y.shapes.selectAll("line,path").remove();
+
+          // Move the button labels into the plot
+
+          y.shapes.selectAll("text")
+                  .style("text-anchor", "start")
+                  .style("font-size", "11px")
+                  .attr("transform", "translate(13, 0.5)");                  
+
+          // Draw the main chart
+          var myChart = new dimple.chart(svg, data);
+          var yy = myChart.addPctAxis("y", "Passenger Count");
+          yy.title = "Passenger Percentage";          
+          myChart.addCategoryAxis("x", "Sex");
+          myChart.addSeries("Survive", dimple.plot.bar);
+          myChart.defaultColors = [
+           new dimple.color("#5656EF"),
+           new dimple.color("#EEA02C")];
+          myChart.addLegend(1000, 200, 50, 100);
+          myChart.setBounds(75,25,900,425);
+
+          // Add title to legend
+          svg.selectAll("title_text")
+          .data(["Survived"])
+          .enter()
+          .append("text")
+            .attr("x", 1000)
+            .attr("y", 200)
+            .style("font-family", "sans-serif")
+            .style("font-size", "10px")
+            .style("color", "Black")
+            .text(function (d) { return d; });
+
+          // Hard code in survival by passenger class data
+          svg.selectAll("title_text")
+          .data(["Survived: 119",
+            "Died: 372"])
+          .enter()
+          .append("text")
+            .attr("x", 1100)
+            .attr("y", function (d, i) { return 63 + i * 12; })
+            .style("font-family", "sans-serif")
+            .style("font-size", "10px")
+            .style("color", "Black")
+            .text(function (d) { return d; });
+          // Middle class
+            svg.selectAll("title_text")
+          .data(["Survived: 87",
+            "Died: 97"])
+          .enter()
+          .append("text")
+            .attr("x", 1039)
+            .attr("y", function (d, i) { return 96 + i * 12; })
+            .style("font-family", "sans-serif")
+            .style("font-size", "10px")
+            .style("color", "Black")
+            .text(function (d) { return d; });
+          // Upper class
+            svg.selectAll("title_text")
+          .data(["Survived: 136",
+            "Died: 80"])
+          .enter()
+          .append("text")
+            .attr("x", 1048)
+            .attr("y", function (d, i) { return 129 + i * 12; })
+            .style("font-family", "sans-serif")
+            .style("font-size", "10px")
+            .style("color", "Black")
+            .text(function (d) { return d; });
+
+
+          // Add title to buttons
+          svg.selectAll("title_text")
+          .data(["Passenger Class"])
+          .enter()
+          .append("text")
+            .attr("x", 1000)
+            .attr("y", 45)
+            .style("font-family", "sans-serif")
+            .style("font-size", "10px")
+            .style("color", "Black")
+            .text(function (d) { return d; });
+
+
+          // Adding storyboard to control animation of main chart
+          var story = myChart.setStoryboard(["Class"], onTick);
+          // Change the frame duration         
+          story.frameDuration = frame;
+          
+          // Draw the bar chart
+          myChart.draw();
+
+        // On click of the side chart
+        function onClick(e) {
+            // Pause the animation
+            story.pauseAnimation();
+            // If it is already selected resume the animation
+            // otherwise pause and move to the selected month
+            if (e.yValue === story.getFrameValue()) {
+                story.startAnimation();
+            } else {
+                story.goToFrame(e.yValue);
+                story.pauseAnimation();
+            }
+        }
+
+
+        // On tick of the main charts storyboard
+        function onTick(e) {
+            if (!firstTick) {
+                // Color all shapes the same
+                s.shapes
+                        .transition()
+                        .duration(frame / 2)
+                        .style("fill", function (d) { return (d.y === e ? indicatorColor.fill : defaultColor.fill) })
+                        .style("stroke", function (d) { return (d.y === e ? indicatorColor.stroke : defaultColor.stroke) })
+                        .style("opacity", 0.4);
+                
+            }
+            firstTick = false;
+        }
+      };      
+    </script>
+  </head>
+<body>
+  <script type="text/javascript">
+  /*
+    Use D3 (not dimple.js) to load the TSV file
+    and pass the contents of it to the draw function
+    */
+  d3.csv("titanic-final.csv", draw);
+  </script>
+</body>
+</html>
